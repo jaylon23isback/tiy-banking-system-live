@@ -9,6 +9,7 @@ import tiy.banking.BankAccount;
 import tiy.banking.Customer;
 
 import javax.servlet.http.HttpSession;
+import java.io.FileNotFoundException;
 
 /**
  * Created by localdom on 5/8/2016.
@@ -19,6 +20,10 @@ public class BankSystemController {
     @RequestMapping(path = "/", method = RequestMethod.GET)
     public String getHome(HttpSession session, Model model) {
         setCommonAttributes(session, model);
+
+        //for the error message in home.html
+        model.addAttribute("myErrorMessage", "This is an error message from the controller ");
+
         model.addAttribute("bankList", Bank.retrieveAllBanks());
 
         return "home";
@@ -27,12 +32,31 @@ public class BankSystemController {
     @RequestMapping(path = "/customerList", method = RequestMethod.GET)
     public String getCustomerList(HttpSession session, Model model, String bankID) {
         setCommonAttributes(session, model);
+
+        if (bankID == null || bankID.isEmpty()) {
+            model.addAttribute("myCustomerListErrorMessage", "Bank ID is required");
+            model.addAttribute("bank", new Bank());
+            model.addAttribute("customer list", null);
+        } else if (session.getAttribute("createCustomerError") != null) {
+            model.addAttribute("myCustomerListErrorMessage",
+                    session.getAttribute("createCustomerError"));
+            model.addAttribute("bank", new Bank());
+            model.addAttribute("customerList", null);
+            session.removeAttribute("createCustomerError");
+
+
+        } else {
+
         Bank bank = Bank.retrieve(bankID);
         model.addAttribute("bank", bank);
         System.out.println("There are " + bank.getBankCustomers().size() + " customers in the current bank");
         model.addAttribute("customerList", bank.getBankCustomers().values());
-        return "customerList";
     }
+
+    return"customerList";
+
+}
+
 
     @RequestMapping(path = "/accountList", method = RequestMethod.GET)
     public String getAccountList(HttpSession session, Model model, String bankID, String customerEmailAddress) {
@@ -87,13 +111,21 @@ public class BankSystemController {
     public String createCustomer(HttpSession session, Model model, String bankID, String firstName, String lastName,
                                 String emailAddress) {
         System.out.println("createCustomer()");
-        setCommonAttributes(session, model);
-        Bank bank = Bank.retrieve(bankID);
 
-        Customer customer = new Customer(firstName, lastName, emailAddress);
-        bank.addCustomer(customer);
 
-        bank.save();
+        if (firstName == null || firstName.isEmpty()
+                || lastName == null || lastName.isEmpty()) {
+            session.setAttribute("CreateCustomerError", "First Name " +
+            "and Last Name are **both** required!");
+        } else {
+            setCommonAttributes(session, model);
+            Bank bank = Bank.retrieve(bankID);
+
+            Customer customer = new Customer(firstName, lastName, emailAddress);
+            bank.addCustomer(customer);
+
+            bank.save();
+        }
 
         return "redirect:/customerList?bankID=" + bankID;
     }
