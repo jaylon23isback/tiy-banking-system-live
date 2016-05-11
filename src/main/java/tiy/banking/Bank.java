@@ -126,7 +126,7 @@ public class Bank {
             Bank newBank = bankParser.parse(fileContents, Bank.class);
             System.out.println("ID of the bank after it was restored: " + newBank.getBankID());
             return newBank;
-        } catch (IOException ioException) {
+        } catch (Exception ioException) {
             ioException.printStackTrace();
             // TODO Implement better exception handling here
             return null;
